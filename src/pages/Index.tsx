@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import AuthScreen from "@/components/AuthScreen";
+import ContactsTab from "@/components/ContactsTab";
 
 // ────────────────────────────────────────────────
 // DATA
@@ -464,10 +465,10 @@ export default function Index() {
     return <AuthScreen onAuth={handleAuth} />;
   }
 
-  return <MessengerApp user={currentUser} onLogout={() => { localStorage.removeItem("ander_token"); localStorage.removeItem("ander_user"); setAuthToken(null); setCurrentUser(null); }} />;
+  return <MessengerApp token={authToken} user={currentUser} onLogout={() => { localStorage.removeItem("ander_token"); localStorage.removeItem("ander_user"); setAuthToken(null); setCurrentUser(null); }} />;
 }
 
-function MessengerApp({ user, onLogout }: { user: { id: number; phone: string; name: string }; onLogout: () => void }) {
+function MessengerApp({ token, user, onLogout }: { token: string; user: { id: number; phone: string; name: string }; onLogout: () => void }) {
   const [tab, setTab] = useState<TabId>("chats");
   const [openChat, setOpenChat] = useState<Chat | null>(null);
   const [calling, setCalling] = useState<Contact | null>(null);
@@ -666,38 +667,15 @@ function MessengerApp({ user, onLogout }: { user: { id: number; phone: string; n
 
             {/* ── CONTACTS ── */}
             {tab === "contacts" && (
-              <div className="animate-fade-in">
-                <div className="px-4 pt-6 pb-3">
-                  <h1 className="text-2xl font-bold">Контакты</h1>
-                </div>
-                <div className="px-4 mb-4">
-                  <div className="flex items-center gap-2 bg-gray-100 rounded-2xl px-4 py-2.5">
-                    <Icon name="Search" size={16} className="text-gray-400" />
-                    <input placeholder="Найти контакт…" className="bg-transparent text-sm outline-none flex-1 placeholder-gray-400" />
-                  </div>
-                </div>
-                <div>
-                  {CONTACTS.map((contact, i) => (
-                    <div key={contact.id} className="flex items-center gap-3 px-4 py-3.5 border-b border-orange-50 animate-fade-in"
-                      style={{ animationDelay: `${i * 0.05}s` }}>
-                      <Avatar contact={contact} size={48} />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm">{contact.name}</div>
-                        <div className={`text-xs mt-0.5 ${contact.status === "online" ? "text-green-500" : "text-gray-400"}`}>{contact.about}</div>
-                      </div>
-                      <div className="flex gap-1">
-                        <button onClick={() => { switchTab("chats"); setOpenChat(CHATS.find(c => c.contactId === contact.id) || CHATS[0]); }}
-                          className="w-9 h-9 rounded-full hover:bg-orange-50 flex items-center justify-center text-orange-500">
-                          <Icon name="MessageCircle" size={16} />
-                        </button>
-                        <button onClick={() => startCall(contact)} className="w-9 h-9 rounded-full hover:bg-orange-50 flex items-center justify-center text-orange-500">
-                          <Icon name="Phone" size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ContactsTab
+                token={token}
+                onStartChat={(c) => {
+                  switchTab("chats");
+                }}
+                onCall={(c) => {
+                  startCall({ id: c.id, name: c.nickname || c.name, avatar: (c.nickname || c.name).slice(0, 2).toUpperCase(), color: "#FF6B2B", status: "online", about: c.about });
+                }}
+              />
             )}
 
             {/* ── PROFILE ── */}
