@@ -3,6 +3,7 @@ import Icon from "@/components/ui/icon";
 
 const AUTH_SEND_URL = "https://functions.poehali.dev/6bc7d2c4-92d6-4551-81cd-b05fff46aad1";
 const AUTH_VERIFY_URL = "https://functions.poehali.dev/a89fd5af-c2a8-44c6-b3a8-052d99849ab2";
+const PROFILE_UPDATE_URL = "https://functions.poehali.dev/f5f9b956-96be-41f4-ad2d-24aa4ceafe01";
 
 const ORANGE = "hsl(25 95% 53%)";
 
@@ -22,6 +23,8 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
   const [devCode, setDevCode] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [pendingToken, setPendingToken] = useState("");
+  const [pendingUser, setPendingUser] = useState<{ id: number; phone: string; name: string } | null>(null);
   const codeRefs = useRef<(HTMLInputElement | null)[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -125,6 +128,8 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
       if (!res.ok) { setError(data.error || "Неверный код"); setCode(["", "", "", "", "", ""]); setTimeout(() => codeRefs.current[0]?.focus(), 50); return; }
       if (data.is_new) {
         setIsNewUser(true);
+        setPendingToken(data.token);
+        setPendingUser(data.user);
         setStep("name");
         return;
       }
@@ -137,19 +142,19 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
   }
 
   async function submitName() {
+    if (!pendingToken || !pendingUser) return;
     setLoading(true);
     setError("");
     try {
-      const codeStr = code.join("");
-      const res = await fetch(AUTH_VERIFY_URL, {
+      const res = await fetch(PROFILE_UPDATE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, code: codeStr, name }),
+        headers: { "Content-Type": "application/json", "X-Auth-Token": pendingToken },
+        body: JSON.stringify({ name, about: "Привет! Я использую Андер 🧡" }),
       });
       const raw = await res.text();
       const data = typeof JSON.parse(raw) === "string" ? JSON.parse(JSON.parse(raw)) : JSON.parse(raw);
       if (!res.ok) { setError(data.error || "Ошибка"); return; }
-      onAuth(data.token, data.user);
+      onAuth(pendingToken, { ...pendingUser, name });
     } catch {
       setError("Ошибка. Попробуйте ещё раз.");
     } finally {
