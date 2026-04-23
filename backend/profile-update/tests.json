@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "No token returns 401",
+      "method": "POST",
+      "path": "/",
+      "body": {"name": "Тест"},
+      "expectedStatus": 401
+    },
+    {
+      "name": "Invalid token returns 401",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-Auth-Token": "invalid_token_xyz"},
+      "body": {"name": "Тест", "about": "Привет"},
+      "expectedStatus": 401
+    }
+  ]
+}
