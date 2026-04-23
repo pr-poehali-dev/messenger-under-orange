@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
+import AuthScreen from "@/components/AuthScreen";
 
 // ────────────────────────────────────────────────
 // DATA
@@ -446,6 +447,27 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 // ────────────────────────────────────────────────
 
 export default function Index() {
+  const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem("ander_token"));
+  const [currentUser, setCurrentUser] = useState<{ id: number; phone: string; name: string } | null>(() => {
+    const u = localStorage.getItem("ander_user");
+    return u ? JSON.parse(u) : null;
+  });
+
+  function handleAuth(token: string, user: { id: number; phone: string; name: string }) {
+    localStorage.setItem("ander_token", token);
+    localStorage.setItem("ander_user", JSON.stringify(user));
+    setAuthToken(token);
+    setCurrentUser(user);
+  }
+
+  if (!authToken || !currentUser) {
+    return <AuthScreen onAuth={handleAuth} />;
+  }
+
+  return <MessengerApp user={currentUser} onLogout={() => { localStorage.removeItem("ander_token"); localStorage.removeItem("ander_user"); setAuthToken(null); setCurrentUser(null); }} />;
+}
+
+function MessengerApp({ user, onLogout }: { user: { id: number; phone: string; name: string }; onLogout: () => void }) {
   const [tab, setTab] = useState<TabId>("chats");
   const [openChat, setOpenChat] = useState<Chat | null>(null);
   const [calling, setCalling] = useState<Contact | null>(null);
@@ -687,19 +709,20 @@ export default function Index() {
                     style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
                   <div className="relative flex items-end gap-4">
                     <div className="w-20 h-20 rounded-2xl border-4 border-white flex items-center justify-center text-2xl font-black text-white shadow-xl"
-                      style={{ background: "hsl(20 90% 40%)" }}>ВЫ</div>
+                      style={{ background: "hsl(20 90% 40%)" }}>
+                      {user.name ? user.name.slice(0, 2).toUpperCase() : "ВЫ"}
+                    </div>
                     <div className="pb-1">
-                      <div className="text-white text-xl font-bold">Имя Фамилия</div>
-                      <div className="text-white/70 text-sm">@username · ID 12345</div>
+                      <div className="text-white text-xl font-bold">{user.name || "Вы"}</div>
+                      <div className="text-white/70 text-sm">{user.phone} · ID {user.id}</div>
                     </div>
                   </div>
                 </div>
                 <div className="px-4 py-5 space-y-3">
                   {[
-                    { icon: "User", label: "Имя", value: "Имя Фамилия" },
-                    { icon: "Phone", label: "Телефон", value: "+7 (999) 123-45-67" },
+                    { icon: "User", label: "Имя", value: user.name || "Не указано" },
+                    { icon: "Phone", label: "Телефон", value: user.phone },
                     { icon: "Info", label: "О себе", value: "Привет! Я использую Андер 🧡" },
-                    { icon: "Link", label: "Имя пользователя", value: "@username" },
                   ].map((item) => (
                     <div key={item.label} className="flex items-center gap-4 bg-white rounded-2xl px-4 py-4 shadow-sm">
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "hsl(30 100% 92%)" }}>
@@ -712,6 +735,13 @@ export default function Index() {
                       <Icon name="ChevronRight" size={16} className="text-gray-300" />
                     </div>
                   ))}
+                  <button onClick={onLogout}
+                    className="w-full flex items-center gap-4 bg-white rounded-2xl px-4 py-4 shadow-sm hover:bg-red-50 transition-colors group">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-red-50 group-hover:bg-red-100">
+                      <Icon name="LogOut" size={16} className="text-red-500" />
+                    </div>
+                    <span className="text-sm font-medium text-red-500">Выйти из аккаунта</span>
+                  </button>
                 </div>
               </div>
             )}
